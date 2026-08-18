@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdio.h>
 #include <ncurses.h>
 #include <stdlib.h>
@@ -15,6 +16,8 @@ size_t mevcut_boyut = 50;
 
 
 char* metin_genislet(char *metin);
+size_t satir_uzunlugu_bul(const char *metin, int hedef_satir);
+size_t metnin_satir_sayisi(const char *metin);
 
 int main(int argc, char *argv[]) {
     setlocale(LC_ALL, ""); // Sistem Türkçe/UTF-8 karakter kümesini aktif eder
@@ -37,6 +40,9 @@ int main(int argc, char *argv[]) {
     FILE * fPtr;
     int karakter;
     int x,y; // Imlecin string içindeki konumu
+    x = 0;
+    y = 2;
+
 
     char *metin = malloc(mevcut_boyut * sizeof(char));
 
@@ -72,7 +78,7 @@ int main(int argc, char *argv[]) {
         refresh();
         }
 
-
+    
     while (1) {
         ch = getch();
             
@@ -94,24 +100,47 @@ int main(int argc, char *argv[]) {
             endwin();
             return 0;
         }
+        
 
-        else if (ch == KEY_LEFT) {
-            if (imlec > 0) imlec--;
+        if (ch == KEY_LEFT) {
+            if (x > 0) x--;
         }
-        // 2. SAĞ OK TUŞU: Imleci sağa kaydır
         else if (ch == KEY_RIGHT) {
-            if (imlec < karakter_sayisi) imlec++;
+            if (x < satir_uzunlugu_bul(metin, y - 1)) x++;
         }
-        // 3. BACKSPACE (SİLME): Imlecin solundaki karakteri sil
-        else if (ch == KEY_BACKSPACE || ch == 127 || ch == '\b') {
-            if (imlec > 0) {
+        else if (ch == KEY_UP) {
+            if (y > 2) y--;
+        }
+        else if (ch == KEY_DOWN) {
+            if (y < metnin_satir_sayisi(metin) + 2) y++;
+        }
+
+        if (satir_uzunlugu_bul(metin, y-1) == 0) {
+            move(y, 0);
+        }
+        else if(satir_uzunlugu_bul(metin, y - 1) <= x) {
+            move(y, satir_uzunlugu_bul(metin, y - 1));
+        }
+        else {
+            move(y, x);
+        }
+
+    // 3. BACKSPACE (SİLME): Imlecin solundaki karakteri sil
+        if (ch == KEY_BACKSPACE || ch == 127 || ch == '\b') {
+            if (x > 0) {
                 // Imleçten sonraki tüm karakterleri 1 sola kaydırarak silinen karakterin üstünü kapatıyoruz
-                memmove(&metin[imlec - 1], &metin[imlec], karakter_sayisi - imlec + 1);
+                memmove(&metin[x - 1], &metin[x], karakter_sayisi - x + 1);
                 karakter_sayisi--;
-                imlec--;
+                x--;
             }
         }
 
+        clear();
+        printw("Yazmaya baslayin (Sol/Sag Ok: Gezinme | Backspace: Silme | Ctrl + S : Kaydet | Ctrl + Q: Cikis)\n\n");
+        printw("%s", metin); // Güncellenmiş metni bas
+        refresh();
+
+/*
         else if (ch >= 32 && ch <= 126){
             // Imlecin olduğu yerden itibaren karakterleri 1 sağa kaydırarak yer açıyoruz
             memmove(&metin[imlec + 1], &metin[imlec], mevcut_boyut - imlec + 1);
@@ -134,7 +163,7 @@ int main(int argc, char *argv[]) {
         }   
         move(2, imlec); 
         refresh();
-    
+  */  
     }
     
 
@@ -160,4 +189,64 @@ char* metin_genislet(char *metin) {
     else {
         return metin;
     }
+}
+
+size_t satir_uzunlugu_bul(const char *metin, int hedef_satir) {
+    int mevcut_satir = 1;
+    size_t i = 0;
+
+    // Hedef satıra git
+    while (metin[i] != '\0' && mevcut_satir < hedef_satir) {
+        if (metin[i] == '\n') mevcut_satir++;
+        i++;
+    }
+
+    if (mevcut_satir < hedef_satir) return 0;
+
+    size_t karakter_sayisi = 0;
+    while (metin[i] != '\0' && metin[i] != '\n') {
+        // UTF-8 devam baytı değilse (0x10xxxxxx değilse) yeni bir karakterdir
+        if ((metin[i] & 0xC0) != 0x80) {
+            karakter_sayisi++;
+        }
+        i++;
+    }
+
+    return karakter_sayisi;
+}
+
+size_t metnin_satir_sayisi(const char *metin) {
+    size_t uzunluk = 0;
+    for (int i = 0; i < strlen(metin); i++) {
+        if (metin[i] == '\0' || metin[i] == '\n') {
+            uzunluk++;
+        }
+    }
+
+    return uzunluk;
+}
+
+void satiri_yazdir(const char *metin, int hedef_y, int x) {
+    // 1. Terminalde ilgili satırın başına git ve satırı temizle
+    int satir = 0;
+    int i;
+    int j;
+    move(hedef_y, 0);
+    clrtoeol(); // Satırın sonuna kadar olan kısmı siler (ekranın tamamını değil!)
+
+
+    // 2. Metizisinden sadece hedef_y satırına denk gelen kısmı bul ve bas
+    // (Örn: metin içindeki hedef_y - 1 tane '\n' atlayıp satır sonuna kadar olan kısmı printw yap)
+    for (i = 0; satir <= hedef_y - 1 ; i++) {
+        if (metin[i] == '\n') {
+            satir++;        
+        }
+    }
+
+    for (j = i; ; inc-expression) {
+    
+    }
+    addch()
+    
+    // 3. Imleci kullanıcı neredeyse oraya geri koy
 }
