@@ -18,6 +18,9 @@ size_t mevcut_boyut = 50;
 char* metin_genislet(char *metin);
 size_t satir_uzunlugu_bul(const char *metin, int hedef_satir);
 size_t metnin_satir_sayisi(const char *metin);
+void satiri_yazdir(const char *metin, int hedef_y, int x);
+void tum_ekranı_yenile(const char *metin, int y, int x);
+int koordinati_indekse_cevir(const char *metin, int hedef_y, int hedef_x);
 
 int main(int argc, char *argv[]) {
     setlocale(LC_ALL, ""); // Sistem Türkçe/UTF-8 karakter kümesini aktif eder
@@ -127,18 +130,37 @@ int main(int argc, char *argv[]) {
 
     // 3. BACKSPACE (SİLME): Imlecin solundaki karakteri sil
         if (ch == KEY_BACKSPACE || ch == 127 || ch == '\b') {
-            if (x > 0) {
-                // Imleçten sonraki tüm karakterleri 1 sola kaydırarak silinen karakterin üstünü kapatıyoruz
-                memmove(&metin[x - 1], &metin[x], karakter_sayisi - x + 1);
-                karakter_sayisi--;
-                x--;
+            x--;
+            int iy, ix;
+            getyx(stdscr, iy, ix); // Ncurses'tan mevcut ekran imlecini al
+
+            // 1. Ekran koordinatını gerçek dizi indeksine çevir
+            int idx = koordinati_indekse_cevir(metin, iy, ix);
+            
+            int silinecek_bayt = 1;
+
+            // Silinecek karakterin UTF-8 olup olmadığını kontrol et
+            // Eğer silinecek bayt bir UTF-8 devam baytı ise (0x80 - 0xBF arası)
+            // bu karakter 2 baytlıktır (Örn: ç, ğ, ı, ö, ş, ü).
+            if ((unsigned char)metin[idx - 1] >= 0x80 && (unsigned char)metin[idx - 1] <= 0xBF) {
+                silinecek_bayt = 2; // Türkçe karakter için 2 bayt sileceğiz
+            }
+            bool satir_silindi = (metin[idx - silinecek_bayt] == '\n');
+
+            // 2. Eğer imleç en başta değilse (silinecek karakter varsa)
+            if (idx > 0) {
+                size_t len = strlen(metin);
+                
+                // Silinen karakterden sonraki verileri 1 sola kaydır
+                memmove(&metin[idx - 1], &metin[idx], len - idx + 1);
+
+                // 3. Ekranda ilgili satırı güncelle
+                // (Eğer silinen karakter '\n' ise tüm ekranı, değilse sadece o satırı güncelle)
+                tum_ekranı_yenile(metin, y, x);
             }
         }
 
-        clear();
-        printw("Yazmaya baslayin (Sol/Sag Ok: Gezinme | Backspace: Silme | Ctrl + S : Kaydet | Ctrl + Q: Cikis)\n\n");
-        printw("%s", metin); // Güncellenmiş metni bas
-        refresh();
+        
 
 /*
         else if (ch >= 32 && ch <= 126){
@@ -228,25 +250,59 @@ size_t metnin_satir_sayisi(const char *metin) {
 
 void satiri_yazdir(const char *metin, int hedef_y, int x) {
     // 1. Terminalde ilgili satırın başına git ve satırı temizle
-    int satir = 0;
-    int i;
-    int j;
     move(hedef_y, 0);
-    clrtoeol(); // Satırın sonuna kadar olan kısmı siler (ekranın tamamını değil!)
+    clrtoeol(); 
 
+    int satir = 0;
+    int i = 0;
 
-    // 2. Metizisinden sadece hedef_y satırına denk gelen kısmı bul ve bas
-    // (Örn: metin içindeki hedef_y - 1 tane '\n' atlayıp satır sonuna kadar olan kısmı printw yap)
-    for (i = 0; satir <= hedef_y - 1 ; i++) {
+    // 2. Hedef satırın başlangıç indeksini bul
+    while (metin[i] != '\0' && satir < hedef_y) {
         if (metin[i] == '\n') {
-            satir++;        
+            satir++;
         }
+        i++;
     }
 
-    for (j = i; ; inc-expression) {
-    
+    // 3. Sadece o satırdaki karakterleri \n veya \0 görene kadar bas
+    while (metin[i] != '\0' && metin[i] != '\n') {
+        addch(metin[i]);
+        i++; // i değerini artırmayı UNUTMA
     }
-    addch()
-    
-    // 3. Imleci kullanıcı neredeyse oraya geri koy
+
+    // 4. İmleci kullanıcının kaldığı koordinata geri getir
+    move(hedef_y, x);
+    refresh();
+}
+
+void tum_ekranı_yenile(const char *metin, int y, int x) {
+    clear();
+    printw("Yazmaya baslayin (Sol/Sag Ok: Gezinme | Backspace: Silme | Ctrl + S : Kaydet | Ctrl + Q: Cikis)\n\n");
+    printw("%s", metin);
+    refresh();
+    move(y, x);
+}
+
+// (y, x) koordinatını metin dizisindeki tek boyutlu 'index'e çeviren fonksiyon
+int koordinati_indekse_cevir(const char *metin, int hedef_y, int hedef_x) {
+    int mevcut_y = 0;
+    int mevcut_x = 0;
+    int i = 0;
+    hedef_y = hedef_y - 2;
+
+    while (metin[i] != '\0') {
+        if (mevcut_y == hedef_y && mevcut_x == hedef_x) {
+            return i; // Aranan dizi indeksi bulundu
+        }
+
+        if (metin[i] == '\n') {
+            mevcut_y++;
+            mevcut_x = 0;
+        } else {
+            mevcut_x++;
+        }
+        i++;
+    }
+
+    return i; // Bulunamazsa metnin son indeksini döndür
 }
