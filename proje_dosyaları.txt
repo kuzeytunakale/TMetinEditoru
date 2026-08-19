@@ -1,0 +1,16 @@
+Araştırılacak şeyler:
+*) İşaretçi Dizisi (Array of Pointers): char ** yapısıyla her satırın adresini tutan dinamik bir dizi.
+*) Çift Yönlü Bağlı Liste (Doubly Linked List): Her düğümün (node) bir satırı temsil ettiği yapı. 
+ Araya yeni satır (Enter'a basıldığında) eklemek ve silmek son derece hızlıdır.
+*) Gap Buffer veya Rope: Bu Aşırı ileri bi şey. Çok büyük metin bloklarında imlecin bulunduğu yerde boş 
+ bir bellek "boşluğu" (gap) bırakan özel veri yapıları.
+
+✔ Araştırıldı!
+
+Bence:
+Bence işaretçi dizisi yap çünkü diğerlerinden daha kolay ama kolaylığı geçtim aşırı manyak güzel bi şey, 
+ olay şu: hani normalde 2 boyutlu array dikdörtgen yapuda yani satırları birbirine bağlı ve 
+ bellekte ardışık ama linked list böyle değil her satır RAM'in rasgele bir yerinde ama 
+ bunların nerede olduğu bir liste içerisinde tutuluyor.
+Ama bunu öğrenmek için şu 1 saatlik videoyu izle: https://youtu.be/H8CF-S5xZt8?si=AiIX1BCQpLaD1sZ7
+Sonra kodu baştan yaz.

@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
     keypad(stdscr, TRUE);
     nl();   // Enter tuşuna basıldığında yeni satıra (alt satırın başına) geçmesini sağlar
     raw(); 
-    
+
     printw("Yazmaya baslayin (Sol/Sag Ok: Gezinme | Backspace: Silme | Ctrl + S : Kaydet | Ctrl + Q: Cikis)\n\n");
     refresh();
 
@@ -137,27 +137,42 @@ int main(int argc, char *argv[]) {
             // 1. Ekran koordinatını gerçek dizi indeksine çevir
             int idx = koordinati_indekse_cevir(metin, iy, ix);
             
-            int silinecek_bayt = 1;
-
-            // Silinecek karakterin UTF-8 olup olmadığını kontrol et
-            // Eğer silinecek bayt bir UTF-8 devam baytı ise (0x80 - 0xBF arası)
-            // bu karakter 2 baytlıktır (Örn: ç, ğ, ı, ö, ş, ü).
-            if ((unsigned char)metin[idx - 1] >= 0x80 && (unsigned char)metin[idx - 1] <= 0xBF) {
-                silinecek_bayt = 2; // Türkçe karakter için 2 bayt sileceğiz
-            }
-            bool satir_silindi = (metin[idx - silinecek_bayt] == '\n');
-
-            // 2. Eğer imleç en başta değilse (silinecek karakter varsa)
             if (idx > 0) {
-                size_t len = strlen(metin);
-                
-                // Silinen karakterden sonraki verileri 1 sola kaydır
-                memmove(&metin[idx - 1], &metin[idx], len - idx + 1);
+                // 1. SİLİNECEK KARAKTERİN BAŞLANGICINI BUL
+                int silinecek_bayt = 0;
+                int k = idx - 1;
 
-                // 3. Ekranda ilgili satırı güncelle
-                // (Eğer silinen karakter '\n' ise tüm ekranı, değilse sadece o satırı güncelle)
-                tum_ekranı_yenile(metin, y, x);
-            }
+                while (k >= 0) {
+                    silinecek_bayt++;
+                    // Eğer bayt 10xxxxxx (devam) formatında DEĞİLSE, harfin başıdır
+                    if ((metin[k] & 0xC0) != 0x80) {
+                        break; 
+                    }
+                    k--;
+                }
+
+                // 2. SİLME İŞLEMİNİ YAP
+                bool satir_silindi = (metin[idx - silinecek_bayt] == '\n');
+                size_t len = strlen(metin);
+
+                memmove(&metin[idx - silinecek_bayt], &metin[idx], len - idx + 1);
+
+                // 3. EKRANI GÜNCELLE
+                if (satir_silindi) {
+                    // Satır birleştiği için tüm ekran yenilenmeli
+                    clear();
+                    printw("Yazmaya baslayin (Sol/Sag Ok: Gezinme | Backspace: Silme | Ctrl + S : Kaydet | Ctrl + Q: Cikis)\n\n");
+                    printw("%s", metin);
+                    
+                    // İmleci üst satırın sonuna alman gerekecek (bunu yazmıştın varsayıyorum)
+                } else {
+                    // Sadece tek karakter silindiği için ekranı temizle ve x'i 1 geri al
+                    clear();
+                    printw("Yazmaya baslayin (Sol/Sag Ok: Gezinme | Backspace: Silme | Ctrl + S : Kaydet | Ctrl + Q: Cikis)\n\n");
+                    printw("%s", metin);
+                    move(y, x - 1);
+                }
+            }        
         }
 
         
@@ -288,21 +303,27 @@ int koordinati_indekse_cevir(const char *metin, int hedef_y, int hedef_x) {
     int mevcut_y = 0;
     int mevcut_x = 0;
     int i = 0;
-    hedef_y = hedef_y - 2;
 
     while (metin[i] != '\0') {
-        if (mevcut_y == hedef_y && mevcut_x == hedef_x) {
-            return i; // Aranan dizi indeksi bulundu
+        // Geçerli bayt bir UTF-8 "devam baytı" mı? (10xxxxxx formatında mı?)
+        bool devam_bayti_mi = ((metin[i] & 0xC0) == 0x80);
+
+        // Sadece karakterin tam başındayken koordinat eşleşmesi ara
+        if (!devam_bayti_mi) {
+            if (mevcut_y == hedef_y && mevcut_x == hedef_x) {
+                return i;
+            }
         }
 
         if (metin[i] == '\n') {
             mevcut_y++;
             mevcut_x = 0;
-        } else {
+        } else if (!devam_bayti_mi) {
+            // SADECE GÖRSEL BİR KARAKTER BAŞLADIĞINDA X'İ ARTIR
             mevcut_x++;
         }
         i++;
     }
 
-    return i; // Bulunamazsa metnin son indeksini döndür
+    return i;
 }
