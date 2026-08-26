@@ -4,6 +4,7 @@
 #include <locale.h>
 #include <ncurses.h>
 
+// dosyanın zaten olduğunu varsayarak bunu yaptım, hata !!!!
 
 
 int main(int argc, char *argv[]) {
@@ -19,7 +20,6 @@ int main(int argc, char *argv[]) {
     noecho();           // Basılan tuşlar ekrana otomatik yazılmaz!
     keypad(stdscr, TRUE);  // Terminalin gelişmiş tuşları (Yön okları, F1-F12, Home, End, Page Up/Down) tek bir karakter (örn: KEY_LEFT) olarak algılamasını sağlar
     nonl();             // Enter'a basınca otomatik olarak alt satıra GEÇMEZ!
-
 
     int capacity = 0; // Her iihtimale karşı (eğer metin boşsa) malloc(0) olacak hata hata hata!!!!
     int karakter;
@@ -95,8 +95,10 @@ int main(int argc, char *argv[]) {
 
     
     for (int index = 0; index < capacity; index++) {
-        printf("%s\n", Metin[index]);
+        mvprintw(index, 0, Metin[index]);
     }
+    refresh();
+    getch();
 
     for (int index = 0; index < i; index++) {
         free(Metin[index]);
