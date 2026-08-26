@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    initscr();          
+    initscr();          // init işlemi   
     cbreak();           // Enter'a basmadan tuşları anlık okur
     noecho();           // Basılan tuşlar ekrana otomatik yazılır
     keypad(stdscr, TRUE);
