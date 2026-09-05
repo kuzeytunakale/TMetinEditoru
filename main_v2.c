@@ -97,10 +97,24 @@ int main(int argc, char *argv[]) {
     }
     refresh();
 
+    move(0, 0);
+    y = 0, x = 0;
+
     while (ch = getch())
     {
-        move(0, 0);
         
+        if (ch == KEY_LEFT) {
+            if (x > 0) x--;
+        }
+        else if (ch == KEY_RIGHT) {
+            if (x < satir_uzunlugu_bul(metin, y - 1)) x++;
+        }
+        else if (ch == KEY_UP) {
+            if (y > 0) y--;
+        }
+        else if (ch == KEY_DOWN) {
+            if (y < metnin_satir_sayisi(metin) + 2) y++;
+        }
     }
     
 
