@@ -91,14 +91,19 @@ int main(int argc, char *argv[]) {
     }
 
     rewind(fPtr);
-
-
     
     for (int index = 0; index < capacity; index++) {
         mvprintw(index, 0, Metin[index]);
     }
     refresh();
-    getch();
+
+    while (ch = getch())
+    {
+        move(0, 0);
+        
+    }
+    
+
 
     for (int index = 0; index < i; index++) {
         free(Metin[index]);
